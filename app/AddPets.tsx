@@ -2,15 +2,14 @@ import React, { useState } from "react";
 import { StyleSheet, TextInput, TouchableOpacity, FlatList, View, Text } from "react-native";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { v4 as uuidv4 } from "uuid";
 
 export default function AddPets() {
   const [petName, setPetName] = useState("");
   const [selectedGender, setSelectedGender] = useState("Select a gender");
   const [selectedType, setSelectedType] = useState("Select a pet type");
-  const [pets, setPets] = useState([]); // Store the list of pets
   const [isGenderDropdownVisible, setGenderDropdownVisible] = useState(false);
   const [isTypeDropdownVisible, setTypeDropdownVisible] = useState(false);
-
   const router = useRouter();
 
   const gendersOptions = ["female", "male"];
@@ -32,27 +31,29 @@ export default function AddPets() {
   const handleAddPet = async () => {
     if (petName && selectedGender !== "Select a gender" && selectedType !== "Select a pet type") {
       const newPet = {
-        id: Date.now().toString(),
+        id: uuidv4(),  // Generates a unique UUID
         name: petName,
         gender: selectedGender,
         type: selectedType,
       };
+  
       const updatedPets = [...pets, newPet];
       setPets(updatedPets); // Update the pets state locally
-
+  
       // Save updated pets to AsyncStorage
       try {
         await AsyncStorage.setItem("pets", JSON.stringify(updatedPets));
       } catch (error) {
         console.error("Error saving pets data:", error);
       }
-
+  
       // Navigate to the main screen
       router.push("/");
     } else {
       alert("Please fill in all fields!");
     }
   };
+  
 
   return (
     <View style={styles.container}>
@@ -102,6 +103,10 @@ export default function AddPets() {
         </View>
       )}
 
+      <View>
+        <TextInput style={styles.otherInput} editable multiline numberOfLines={4} maxLength={40} />
+      </View>
+
       <TouchableOpacity style={styles.addButton} onPress={handleAddPet}>
         <Text style={styles.addButtonText}>Add Pet</Text>
       </TouchableOpacity>
@@ -150,7 +155,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginTop: 5,
     maxHeight: 150,
-    zIndex: 9999, // Ensure the dropdown stays on top
+    zIndex: 9999,
     position: "absolute",
   },
   dropdownItem: {
@@ -171,5 +176,11 @@ const styles = StyleSheet.create({
   addButtonText: {
     color: "white",
     fontSize: 16,
+  },
+  otherInput: {
+    borderColor: "#ccc",
+    width: 250,
+    height: 150,
+    borderWidth: 1,
   },
 });
