@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { StyleSheet, FlatList, View, Text, Pressable } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Link } from "expo-router";
-import { useFocusEffect } from "@react-navigation/native";
 
 export default function HomeScreen() {
   const [pets, setPets] = useState([]);

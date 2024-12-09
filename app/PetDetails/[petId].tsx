@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter, useLocalSearchParams } from "expo-router"; // Updated hook
+import { useLocalSearchParams } from "expo-router"; // For dynamic routing
 
 export default function PetDetails() {
-  const [pet, setPet] = useState(null);
-  const { petId } = useLocalSearchParams(); // Get query parameters
+  const [pet, setPet] = useState(null); // State for the pet details
+  const { petId } = useLocalSearchParams(); // Extract petId from the URL
 
   useEffect(() => {
     const loadPetDetails = async () => {
       try {
         const storedPets = await AsyncStorage.getItem("pets");
         if (storedPets) {
-          const pets = JSON.parse(storedPets);
-          const selectedPet = pets.find((p) => p.id.toString() === petId); // Match petId
-          setPet(selectedPet);
+          const pets = JSON.parse(storedPets); // Parse the stored pets
+          const selectedPet = pets.find((p) => p.id.toString() === petId); // Find the pet by ID
+          setPet(selectedPet); // Set the selected pet in state
         }
       } catch (error) {
         console.error("Error loading pet details:", error);
@@ -29,7 +29,9 @@ export default function PetDetails() {
   if (!pet) {
     return (
       <View style={styles.container}>
-        <Text>Loading...</Text>
+        <Text style={styles.message}>
+          {petId ? "Loading pet details..." : "Invalid pet ID provided."}
+        </Text>
       </View>
     );
   }
@@ -47,16 +49,21 @@ export default function PetDetails() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#f5f5f5",
+    padding: 20,
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
+    marginBottom: 20,
   },
   detail: {
     fontSize: 18,
-    marginTop: 10,
+    marginVertical: 5,
+  },
+  message: {
+    fontSize: 16,
+    color: "#555",
   },
 });
