@@ -10,14 +10,11 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import * as Notifications from "expo-notifications";
-import DateTimePicker from "@react-native-community/datetimepicker";
 
 export default function ToDoList() {
   const { petId } = useLocalSearchParams(); // Access petId from navigation
   const [task, setTask] = useState("");
   const [tasks, setTasks] = useState([]);
-  const [dueDate, setDueDate] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
 
   useEffect(() => {
     loadTasks();
@@ -44,15 +41,13 @@ export default function ToDoList() {
 
   const handleAddTask = async () => {
     if (task) {
-      const newTask = { id: Date.now(), name: task, dueDate };
+      const newTask = { id: Date.now(), name: task };
       const updatedTasks = [...tasks, newTask];
       setTasks(updatedTasks);
       setTask("");
-      setDueDate(new Date());
       saveTasks(updatedTasks);
 
-      // Schedule notification
-      scheduleNotification(newTask);
+      
 
     } else {
       alert("Task cannot be empty!");
@@ -65,23 +60,7 @@ export default function ToDoList() {
     saveTasks(updatedTasks);
   };
 
-  const scheduleNotification = async (task) => {
-    const trigger = new Date(task.dueDate);
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "To-Do Reminder",
-        body: `Task: ${task.name}`,
-      },
-      trigger,
-    });
-  };
-
-  const handleDateChange = (event, selectedDate) => {
-    const currentDate = selectedDate || dueDate;
-    setShowDatePicker(false);
-    setDueDate(currentDate);
-  };
-
+  
   return (
     <View style={styles.container}>
       <Text style={styles.title}>To-Do: {petId}</Text>
@@ -93,24 +72,6 @@ export default function ToDoList() {
         onChangeText={setTask}
       />
 
-      <TouchableOpacity
-        style={styles.dateButton}
-        onPress={() => setShowDatePicker(true)}
-      >
-        <Text style={styles.dateText}>
-          Due Date: {dueDate.toDateString()} {dueDate.toLocaleTimeString()}
-        </Text>
-      </TouchableOpacity>
-
-      {showDatePicker && (
-        <DateTimePicker
-          value={dueDate}
-          mode="datetime"
-          display="default"
-          onChange={handleDateChange}
-        />
-      )}
-
       <TouchableOpacity style={styles.addButton} onPress={handleAddTask}>
         <Text style={styles.addButtonText}>Add Task</Text>
       </TouchableOpacity>
@@ -120,9 +81,7 @@ export default function ToDoList() {
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <View style={styles.taskItem}>
-            <Text style={styles.taskText}>
-              {item.name} - {new Date(item.dueDate).toLocaleString()}
-            </Text>
+            <Text style={styles.taskText}>{item.name}</Text>
             <TouchableOpacity
               style={styles.deleteButton}
               onPress={() => handleDeleteTask(item.id)}
@@ -154,16 +113,6 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
     borderRadius: 5,
     marginBottom: 20,
-  },
-  dateButton: {
-    padding: 10,
-    backgroundColor: "#ddd",
-    borderRadius: 5,
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  dateText: {
-    fontSize: 16,
   },
   addButton: {
     backgroundColor: "#007AFF",

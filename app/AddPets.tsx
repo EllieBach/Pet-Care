@@ -1,25 +1,33 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  FlatList,
   View,
   Text,
+  Modal,
+  FlatList,
 } from "react-native";
 import { useRouter } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { v4 as uuidv4 } from "uuid";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import * as FileSystem from "expo-file-system";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const petsFilePath = `${FileSystem.documentDirectory}pets.json`;
 
 export default function AddPets() {
   const [petName, setPetName] = useState("");
   const [selectedGender, setSelectedGender] = useState("Select a gender");
   const [selectedType, setSelectedType] = useState("Select a pet type");
-  const [birthDate, setBirthDate] = useState(new Date()); // Default date
-  const [showDatePicker, setShowDatePicker] = useState(false); // Declare this
-  const [isGenderDropdownVisible, setGenderDropdownVisible] = useState(false);
-  const [isTypeDropdownVisible, setTypeDropdownVisible] = useState(false);
+  const [birthDate, setBirthDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [allergies, setAllergies] = useState("");
+  const [isGenderPickerOpen, setIsGenderPickerOpen] = useState(false);
+  const [isTypePickerOpen, setIsTypePickerOpen] = useState(false);
+  const [other, setOther] = useState(""); 
+
+  const [pets, setPets] = useState([]);
   const router = useRouter();
 
   const gendersOptions = ["female", "male"];
@@ -31,28 +39,25 @@ export default function AddPets() {
     "Bird",
     "Reptile",
     "Lizard",
+    "other",
   ];
 
-  const toggleGenderDropdown = () =>
-    setGenderDropdownVisible(!isGenderDropdownVisible);
-  const toggleTypeDropdown = () =>
-    setTypeDropdownVisible(!isTypeDropdownVisible);
-
-  const selectGender = (gender) => {
-    setSelectedGender(gender);
-    setGenderDropdownVisible(false);
+  const fetchPets = async () => {
+    try {
+      const fileInfo = await FileSystem.getInfoAsync(petsFilePath);
+      if (fileInfo.exists) {
+        const fileContent = await FileSystem.readAsStringAsync(petsFilePath);
+        const petsData = JSON.parse(fileContent);
+        setPets(petsData);
+      }
+    } catch (error) {
+      console.error("Error loading pets:", error);
+    }
   };
 
-  const selectAnimal = (animal) => {
-    setSelectedType(animal);
-    setTypeDropdownVisible(false);
-  };
-
-  const handleDateChange = (event, selectedDate) => {
-    const currentDate = selectedDate || birthDate;
-    setShowDatePicker(false); // Close the date picker
-    setBirthDate(currentDate); // Set the selected date
-  };
+  useEffect(() => {
+    fetchPets();
+  }, []);
 
   const handleAddPet = async () => {
     if (
@@ -65,23 +70,70 @@ export default function AddPets() {
         name: petName,
         gender: selectedGender,
         type: selectedType,
-        birthDate: birthDate.toISOString().split("T")[0], // Save as "YYYY-MM-DD"
+        birthDate: birthDate.toISOString().split("T")[0],
+        allergies: allergies,
+        other: other,
       };
 
-      const storedPets = await AsyncStorage.getItem("pets");
-      const pets = storedPets ? JSON.parse(storedPets) : [];
-      pets.push(newPet);
-      await AsyncStorage.setItem("pets", JSON.stringify(pets));
+      try {
+        const fileInfo = await FileSystem.getInfoAsync(petsFilePath);
+        let petsList = [];
+        if (fileInfo.exists) {
+          const fileContent = await FileSystem.readAsStringAsync(petsFilePath);
+          petsList = JSON.parse(fileContent);
+        }
 
-      router.push("/"); // Navigate to the main screen
+        petsList.push(newPet);
+
+        await FileSystem.writeAsStringAsync(
+          petsFilePath,
+          JSON.stringify(petsList, null, 2)
+        );
+        await AsyncStorage.setItem("petData", JSON.stringify(petsList));
+
+        setPets(petsList);
+
+        console.log("Pet saved successfully!");
+        router.replace("/"); // Navigate to the main screen
+      } catch (error) {
+        console.error("Error saving pet:", error);
+        alert("Failed to save pet.");
+      }
     } else {
       alert("Please fill in all fields!");
     }
   };
 
+  // Show the picker
+  const showGenderPicker = () => setIsGenderPickerOpen(true);
+  const hideGenderPicker = () => setIsGenderPickerOpen(false);
+  const showTypePicker = () => setIsTypePickerOpen(true);
+  const hideTypePicker = () => setIsTypePickerOpen(false);
+
+  // Render items for FlatList (Gender and Type pickers)
+  const renderPickerItems = (data, setSelectedValue, hidePicker) => {
+    return (
+      <FlatList
+        data={data}
+        keyExtractor={(item) => item}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.pickerItem}
+            onPress={() => {
+              setSelectedValue(item);
+              hidePicker();
+            }}
+          >
+            <Text style={styles.pickerItemText}>{item}</Text>
+          </TouchableOpacity>
+        )}
+      />
+    );
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.smallTitle}>Pet name</Text>
+      {/* Pet Name Input */}
       <TextInput
         style={styles.input}
         placeholder="Enter pet name"
@@ -89,62 +141,66 @@ export default function AddPets() {
         onChangeText={setPetName}
       />
 
-      <Text style={styles.smallTitle}>Pet gender</Text>
+      {/* Gender Picker */}
       <TouchableOpacity
-        style={styles.dropdownHeader}
-        onPress={toggleGenderDropdown}
+        style={styles.input}
+        onPress={showGenderPicker}
       >
-        <Text style={styles.dropdownText}>{selectedGender}</Text>
+        <Text>{selectedGender}</Text>
       </TouchableOpacity>
-
-      {isGenderDropdownVisible && (
-        <View style={styles.dropdownList}>
-          <FlatList
-            data={gendersOptions}
-            keyExtractor={(item, index) => index.toString()}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.dropdownItem}
-                onPress={() => selectGender(item)}
-              >
-                <Text style={styles.dropdownItemText}>{item}</Text>
-              </TouchableOpacity>
-            )}
-          />
-        </View>
+      {isGenderPickerOpen && (
+        <Modal transparent={true} visible={isGenderPickerOpen} animationType="slide">
+          <View style={styles.modalContainer}>
+            <TouchableOpacity
+              style={styles.modalBackdrop}
+              onPress={hideGenderPicker}
+            />
+            <View style={styles.modalContent}>
+              {renderPickerItems(
+                gendersOptions,
+                setSelectedGender,
+                hideGenderPicker
+              )}
+            </View>
+          </View>
+        </Modal>
       )}
 
-      <Text style={styles.smallTitle}>Pet type</Text>
+      {/* Pet Type Picker */}
       <TouchableOpacity
-        style={styles.dropdownHeader}
-        onPress={toggleTypeDropdown}
+        style={styles.input}
+        onPress={showTypePicker}
       >
-        <Text style={styles.dropdownText}>{selectedType}</Text>
+        <Text>{selectedType}</Text>
       </TouchableOpacity>
-
-      {isTypeDropdownVisible && (
-        <View style={styles.dropdownList}>
-          <FlatList
-            data={animalType}
-            keyExtractor={(item, index) => index.toString()}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.dropdownItem}
-                onPress={() => selectAnimal(item)}
-              >
-                <Text style={styles.dropdownItemText}>{item}</Text>
-              </TouchableOpacity>
-            )}
-          />
-        </View>
+      {isTypePickerOpen && (
+        <Modal transparent={true} visible={isTypePickerOpen} animationType="slide">
+          <View style={styles.modalContainer}>
+            <TouchableOpacity
+              style={styles.modalBackdrop}
+              onPress={hideTypePicker}
+            />
+            <View style={styles.modalContent}>
+              {renderPickerItems(
+                animalType,
+                setSelectedType,
+                hideTypePicker
+              )}
+            </View>
+          </View>
+        </Modal>
       )}
 
-      <Text style={styles.smallTitle}>Birth Date</Text>
+      {/* Birth Date Picker */}
       <TouchableOpacity
-        style={styles.dateButton}
+        style={styles.datePickerButton}
         onPress={() => setShowDatePicker(true)}
       >
-        <Text style={styles.dateText}>{birthDate.toDateString()}</Text>
+        <Text style={styles.datePickerText}>
+          {birthDate
+            ? `Birth Date: ${birthDate.toISOString().split("T")[0]}`
+            : "Select Birth Date"}
+        </Text>
       </TouchableOpacity>
 
       {showDatePicker && (
@@ -152,12 +208,34 @@ export default function AddPets() {
           value={birthDate}
           mode="date"
           display="default"
-          onChange={handleDateChange}
+          onChange={(event, selectedDate) => {
+            if (selectedDate) {
+              setBirthDate(selectedDate);
+            }
+            setShowDatePicker(false);
+          }}
         />
       )}
 
+      {/* Allergies */}
+      <TextInput
+        style={[styles.input, styles.allergiesInput]}
+        placeholder="Enter allergies"
+        value={allergies}
+        onChangeText={setAllergies}
+        multiline={true}
+        numberOfLines={4}
+        textAlignVertical="top"
+      />
+      <TextInput 
+      style={styles.input}
+      placeholder="Other"
+      multiline={true}
+      numberOfLines={4}
+      onChangeText={setOther}/>
+
       <TouchableOpacity style={styles.addButton} onPress={handleAddPet}>
-        <Text style={styles.addButtonText}>Add Pet</Text>
+        <Text style={styles.addButtonText}>Add</Text>
       </TouchableOpacity>
     </View>
   );
@@ -166,76 +244,66 @@ export default function AddPets() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-   
-    alignItems: "center",
-    backgroundColor: "#f5f5f5",
     padding: 20,
-  },
-  smallTitle: {
-    color: "#333",
-    fontSize: 14,
-    marginBottom: 10,
+    alignItems: "center",
   },
   input: {
     width: "80%",
     padding: 10,
     borderWidth: 1,
-    borderColor: "#ccc",
     borderRadius: 5,
-    marginBottom: 20,
-  },
-  dropdownHeader: {
-    width: "80%",
-    padding: 15,
-    backgroundColor: "#ddd",
-    borderRadius: 5,
-    alignItems: "center",
     marginBottom: 10,
   },
-  dropdownText: {
-    fontSize: 16,
-    color: "#333",
-  },
-  dropdownList: {
-    width: "80%",
-    backgroundColor: "#fff",
-    borderColor: "#ccc",
-    borderWidth: 1,
-    borderRadius: 5,
-    marginTop: 5,
-    maxHeight: 150,
-    zIndex: 9999,
-    position: "absolute",
-  },
-  dropdownItem: {
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  dropdownItemText: {
-    fontSize: 16,
-    color: "#333",
-  },
-  dateButton: {
-    width: "80%",
+  pickerItem: {
     padding: 10,
-    backgroundColor: "#ddd",
-    borderRadius: 5,
-    alignItems: "center",
-    marginBottom: 15,
+    backgroundColor: "#f0f0f0",
+    marginBottom: 5,
   },
-  dateText: {
+  pickerItemText: {
+    fontSize: 18,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalBackdrop: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 10,
+    width: "80%",
+  },
+  datePickerButton: {
+    marginBottom: 10,
+    padding: 10,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 5,
+  },
+  datePickerText: {
     fontSize: 16,
-    color: "#333",
   },
   addButton: {
     backgroundColor: "#007AFF",
     padding: 10,
     borderRadius: 5,
-    marginTop: 20,
+    width: "50%",
+    justifyContent: "center",
+    alignItems: "center",
   },
   addButtonText: {
-    color: "white",
-    fontSize: 16,
+    color: "#fff",
+    textAlign: "center",
+  },
+  allergiesInput: {
+    height: 100,
+    textAlignVertical: "top",
   },
 });

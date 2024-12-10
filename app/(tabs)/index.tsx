@@ -1,48 +1,30 @@
 import React, { useState, useEffect } from "react";
 import { StyleSheet, FlatList, View, Text, Pressable } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as FileSystem from "expo-file-system";
 import { Link } from "expo-router";
+
+const petsFilePath = `${FileSystem.documentDirectory}pets.json`;
 
 export default function HomeScreen() {
   const [pets, setPets] = useState([]);
 
-  useEffect(() => {
-    const loadPets = async () => {
-      try {
-        const storedPets = await AsyncStorage.getItem("pets");
-  
-        if (storedPets) {
-          setPets(JSON.parse(storedPets)); // Parse and set the pets state
-        }
-      } catch (error) {
-        console.error("Error loading pets data:", error);
+  const fetchPets = async () => {
+    try {
+      const fileInfo = await FileSystem.getInfoAsync(petsFilePath);
+      if (fileInfo.exists) {
+        const fileContent = await FileSystem.readAsStringAsync(petsFilePath);
+        const petsData = JSON.parse(fileContent);
+        setPets(petsData);
       }
-    };
-  
-    loadPets();
-  }, []); // This effect only runs once when the component mounts
-  
+    } catch (error) {
+      console.error("Error loading pets:", error);
+    }
+  };
 
-{/**
-  useFocusEffect(
-    React.useCallback(() => {
-      const loadPets = async () => {
-        try {
-          const storedPets = await AsyncStorage.getItem("pets");
-          if (storedPets) {
-            const parsedPets = JSON.parse(storedPets);
-            setPets(parsedPets);
-            console.log("Pets loaded:", parsedPets); // Debug log to verify loading
-          }
-        } catch (error) {
-          console.error("Error loading pets:", error);
-        }
-      };
+  useEffect(() => {
+    fetchPets();
+  }, []);
 
-      loadPets();
-    }, []) // Runs on every focus
-  );
- */}
   return (
     <View style={styles.container}>
       <FlatList
