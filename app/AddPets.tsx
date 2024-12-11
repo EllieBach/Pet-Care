@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { StyleSheet, View, TextInput, TouchableOpacity, Text, Modal, FlatList } from "react-native";
+import 'react-native-get-random-values';
 import { v4 as uuidv4 } from "uuid";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router"; // Import useRouter
 
 export default function AddPets() {
   const [petName, setPetName] = useState("");
@@ -13,62 +15,65 @@ export default function AddPets() {
   const [allergies, setAllergies] = useState("");
   const [other, setOther] = useState("");
 
-  const gendersOptions = ["female", "male"];
-  const animalType = [
-    "Dog", "Cat", "Hamster", "Guinea pig", "Bird", "Reptile", "Lizard", "Other"
-  ];
+  const gendersOptions = ["Female", "Male"];
+  const animalType = ["Dog", "Cat", "Hamster", "Guinea Pig", "Bird", "Reptile", "Lizard", "Other"];
+
+  const router = useRouter(); // Initialize the router
 
   // Fetch saved pets from AsyncStorage on component mount
   useEffect(() => {
-   
     const loadPets = async () => {
-      const savedPets = await AsyncStorage.getItem("pets");
-      if (savedPets) {
-        setPets(JSON.parse(savedPets));
-        
+      try {
+        const savedPets = await AsyncStorage.getItem("pets");
+        if (savedPets) {
+          setPets(JSON.parse(savedPets));
+          console.log("Pets loaded from storage:", JSON.parse(savedPets)); // Debug log
+        }
+      } catch (error) {
+        console.error("Error loading pets:", error); // Debug log
       }
     };
     loadPets();
   }, []);
 
   const handleAddPet = async () => {
-    if (petName && selectedGender !== "Select a gender" && selectedType !== "Select a pet type") {
-      const newPet = {
-        id: uuidv4(),
-        name: petName,
-        gender: selectedGender,
-        type: selectedType,
-        allergies: allergies,
-        other: other,
-      };
-  
-      try {
+    try {
+      console.log("handleAddPet called"); // Debug log
+      if (petName && selectedGender !== "Select a gender" && selectedType !== "Select a pet type") {
+        const newPet = {
+          id: uuidv4(),
+          name: petName,
+          gender: selectedGender,
+          type: selectedType,
+          allergies,
+          other,
+        };
         const existingPets = await AsyncStorage.getItem("pets");
         const updatedPets = existingPets ? JSON.parse(existingPets) : [];
         updatedPets.push(newPet);
-  
-        // Debug log
-        console.log("Updated pets:", updatedPets);
-  
         await AsyncStorage.setItem("pets", JSON.stringify(updatedPets));
-  
-        setPets(updatedPets); 
-        setPetName(""); 
-        setSelectedGender("Select a gender"); 
-        setSelectedType("Select a pet type"); 
-        setAllergies(""); 
-        setOther(""); 
-  
+        setPets(updatedPets);
+
+        console.log("New pet added:", newPet); // Debug log
         alert("Pet added successfully!");
-      } catch (error) {
-        console.error("Error saving pet:", error);
-        alert("Failed to save pet.");
+
+        // Reset fields after adding a pet
+        setPetName("");
+        setSelectedGender("Select a gender");
+        setSelectedType("Select a pet type");
+        setAllergies("");
+        setOther("");
+
+        // Navigate back to the index page
+        router.push("/");
+      } else {
+        alert("Please fill in all fields!");
       }
-    } else {
-      alert("Please fill in all fields!");
+    } catch (error) {
+      console.error("Error in handleAddPet:", error); // Debug log
+      alert("Failed to add pet. Please try again.");
     }
   };
-  
 
   // Render Picker Items (Gender, Type)
   const renderPickerItems = (data, setSelectedValue, hidePicker) => {
@@ -131,7 +136,7 @@ export default function AddPets() {
           </View>
         </Modal>
       )}
-    
+
       {/* Allergies and Other Information */}
       <TextInput
         style={[styles.input, styles.allergiesInput]}
@@ -151,12 +156,21 @@ export default function AddPets() {
         onChangeText={setOther}
       />
 
-      {/* Add Button */}
-      <TouchableOpacity style={styles.addButton} onPress={handleAddPet}>
-        <Text style={styles.addButtonText}>Add Pet</Text>
-      </TouchableOpacity>
-
-     
+      
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity style={styles.cancelButton} onPress={() => router.push("/")}>
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => {
+            console.log("Add Pet Button Pressed"); 
+            handleAddPet();
+          }}
+        >
+          <Text style={styles.addButtonText}>Add Pet</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -205,8 +219,26 @@ const styles = StyleSheet.create({
     height: 100,
     textAlignVertical: "top",
   },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "80%",
+    marginTop: 10,
+  },
+  cancelButton: {
+    backgroundColor: "#ccc",
+    padding: 10,
+    borderRadius: 35,
+    width: "40%",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  cancelButtonText: {
+    color: "#000",
+    fontWeight: "bold",
+  },
   addButton: {
-    backgroundColor: "#A3DFF2",
+    backgroundColor: "#007BFF",
     padding: 10,
     borderRadius: 35,
     width: "40%",
@@ -215,5 +247,6 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     color: "#fff",
+    fontWeight: "bold",
   },
 });
