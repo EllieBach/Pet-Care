@@ -1,100 +1,65 @@
 import React, { useState, useEffect } from "react";
-import {
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View,
-  Text,
-  Modal,
-  FlatList,
-} from "react-native";
-import { useRouter } from "expo-router";
+import { StyleSheet, View, TextInput, TouchableOpacity, Text, Modal, FlatList } from "react-native";
 import { v4 as uuidv4 } from "uuid";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import * as FileSystem from "expo-file-system";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-const petsFilePath = `${FileSystem.documentDirectory}pets.json`;
 
 export default function AddPets() {
   const [petName, setPetName] = useState("");
-  const [selectedGender, setSelectedGender] = useState("Select a gender");
-  const [selectedType, setSelectedType] = useState("Select a pet type");
-  const [birthDate, setBirthDate] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [allergies, setAllergies] = useState("");
-  const [isGenderPickerOpen, setIsGenderPickerOpen] = useState(false);
-  const [isTypePickerOpen, setIsTypePickerOpen] = useState(false);
-  const [other, setOther] = useState(""); 
-
   const [pets, setPets] = useState([]);
-  const router = useRouter();
+  const [isGenderPickerOpen, setIsGenderPickerOpen] = useState(false);
+  const [selectedGender, setSelectedGender] = useState("Select a gender");
+  const [isTypePickerOpen, setIsTypePickerOpen] = useState(false);
+  const [selectedType, setSelectedType] = useState("Select a pet type");
+  const [allergies, setAllergies] = useState("");
+  const [other, setOther] = useState("");
 
   const gendersOptions = ["female", "male"];
   const animalType = [
-    "Dog",
-    "Cat",
-    "Hamster",
-    "Guinea pig",
-    "Bird",
-    "Reptile",
-    "Lizard",
-    "other",
+    "Dog", "Cat", "Hamster", "Guinea pig", "Bird", "Reptile", "Lizard", "Other"
   ];
 
-  const fetchPets = async () => {
-    try {
-      const fileInfo = await FileSystem.getInfoAsync(petsFilePath);
-      if (fileInfo.exists) {
-        const fileContent = await FileSystem.readAsStringAsync(petsFilePath);
-        const petsData = JSON.parse(fileContent);
-        setPets(petsData);
-      }
-    } catch (error) {
-      console.error("Error loading pets:", error);
-    }
-  };
-
+  // Fetch saved pets from AsyncStorage on component mount
   useEffect(() => {
-    fetchPets();
+   
+    const loadPets = async () => {
+      const savedPets = await AsyncStorage.getItem("pets");
+      if (savedPets) {
+        setPets(JSON.parse(savedPets));
+        
+      }
+    };
+    loadPets();
   }, []);
 
   const handleAddPet = async () => {
-    if (
-      petName &&
-      selectedGender !== "Select a gender" &&
-      selectedType !== "Select a pet type"
-    ) {
+    if (petName && selectedGender !== "Select a gender" && selectedType !== "Select a pet type") {
       const newPet = {
         id: uuidv4(),
         name: petName,
         gender: selectedGender,
         type: selectedType,
-        birthDate: birthDate.toISOString().split("T")[0],
         allergies: allergies,
         other: other,
       };
-
+  
       try {
-        const fileInfo = await FileSystem.getInfoAsync(petsFilePath);
-        let petsList = [];
-        if (fileInfo.exists) {
-          const fileContent = await FileSystem.readAsStringAsync(petsFilePath);
-          petsList = JSON.parse(fileContent);
-        }
-
-        petsList.push(newPet);
-
-        await FileSystem.writeAsStringAsync(
-          petsFilePath,
-          JSON.stringify(petsList, null, 2)
-        );
-        await AsyncStorage.setItem("petData", JSON.stringify(petsList));
-
-        setPets(petsList);
-
-        console.log("Pet saved successfully!");
-        router.replace("/"); // Navigate to the main screen
+        const existingPets = await AsyncStorage.getItem("pets");
+        const updatedPets = existingPets ? JSON.parse(existingPets) : [];
+        updatedPets.push(newPet);
+  
+        // Debug log
+        console.log("Updated pets:", updatedPets);
+  
+        await AsyncStorage.setItem("pets", JSON.stringify(updatedPets));
+  
+        setPets(updatedPets); 
+        setPetName(""); 
+        setSelectedGender("Select a gender"); 
+        setSelectedType("Select a pet type"); 
+        setAllergies(""); 
+        setOther(""); 
+  
+        alert("Pet added successfully!");
       } catch (error) {
         console.error("Error saving pet:", error);
         alert("Failed to save pet.");
@@ -103,14 +68,9 @@ export default function AddPets() {
       alert("Please fill in all fields!");
     }
   };
+  
 
-  // Show the picker
-  const showGenderPicker = () => setIsGenderPickerOpen(true);
-  const hideGenderPicker = () => setIsGenderPickerOpen(false);
-  const showTypePicker = () => setIsTypePickerOpen(true);
-  const hideTypePicker = () => setIsTypePickerOpen(false);
-
-  // Render items for FlatList (Gender and Type pickers)
+  // Render Picker Items (Gender, Type)
   const renderPickerItems = (data, setSelectedValue, hidePicker) => {
     return (
       <FlatList
@@ -133,7 +93,6 @@ export default function AddPets() {
 
   return (
     <View style={styles.container}>
-      {/* Pet Name Input */}
       <TextInput
         style={styles.input}
         placeholder="Enter pet name"
@@ -142,82 +101,38 @@ export default function AddPets() {
       />
 
       {/* Gender Picker */}
-      <TouchableOpacity
-        style={styles.input}
-        onPress={showGenderPicker}
-      >
+      <TouchableOpacity style={styles.input} onPress={() => setIsGenderPickerOpen(true)}>
         <Text>{selectedGender}</Text>
       </TouchableOpacity>
+
       {isGenderPickerOpen && (
         <Modal transparent={true} visible={isGenderPickerOpen} animationType="slide">
           <View style={styles.modalContainer}>
-            <TouchableOpacity
-              style={styles.modalBackdrop}
-              onPress={hideGenderPicker}
-            />
+            <TouchableOpacity style={styles.modalBackdrop} onPress={() => setIsGenderPickerOpen(false)} />
             <View style={styles.modalContent}>
-              {renderPickerItems(
-                gendersOptions,
-                setSelectedGender,
-                hideGenderPicker
-              )}
+              {renderPickerItems(gendersOptions, setSelectedGender, () => setIsGenderPickerOpen(false))}
             </View>
           </View>
         </Modal>
       )}
 
-      {/* Pet Type Picker */}
-      <TouchableOpacity
-        style={styles.input}
-        onPress={showTypePicker}
-      >
+      {/* Type Picker */}
+      <TouchableOpacity style={styles.input} onPress={() => setIsTypePickerOpen(true)}>
         <Text>{selectedType}</Text>
       </TouchableOpacity>
+
       {isTypePickerOpen && (
         <Modal transparent={true} visible={isTypePickerOpen} animationType="slide">
           <View style={styles.modalContainer}>
-            <TouchableOpacity
-              style={styles.modalBackdrop}
-              onPress={hideTypePicker}
-            />
+            <TouchableOpacity style={styles.modalBackdrop} onPress={() => setIsTypePickerOpen(false)} />
             <View style={styles.modalContent}>
-              {renderPickerItems(
-                animalType,
-                setSelectedType,
-                hideTypePicker
-              )}
+              {renderPickerItems(animalType, setSelectedType, () => setIsTypePickerOpen(false))}
             </View>
           </View>
         </Modal>
       )}
-
-      {/* Birth Date Picker */}
-      <TouchableOpacity
-        style={styles.datePickerButton}
-        onPress={() => setShowDatePicker(true)}
-      >
-        <Text style={styles.datePickerText}>
-          {birthDate
-            ? `Birth Date: ${birthDate.toISOString().split("T")[0]}`
-            : "Select Birth Date"}
-        </Text>
-      </TouchableOpacity>
-
-      {showDatePicker && (
-        <DateTimePicker
-          value={birthDate}
-          mode="date"
-          display="default"
-          onChange={(event, selectedDate) => {
-            if (selectedDate) {
-              setBirthDate(selectedDate);
-            }
-            setShowDatePicker(false);
-          }}
-        />
-      )}
-
-      {/* Allergies */}
+    
+      {/* Allergies and Other Information */}
       <TextInput
         style={[styles.input, styles.allergiesInput]}
         placeholder="Enter allergies"
@@ -227,16 +142,21 @@ export default function AddPets() {
         numberOfLines={4}
         textAlignVertical="top"
       />
-      <TextInput 
-      style={styles.input}
-      placeholder="Other"
-      multiline={true}
-      numberOfLines={4}
-      onChangeText={setOther}/>
+      <TextInput
+        style={styles.input}
+        placeholder="Other"
+        multiline={true}
+        numberOfLines={4}
+        value={other}
+        onChangeText={setOther}
+      />
 
+      {/* Add Button */}
       <TouchableOpacity style={styles.addButton} onPress={handleAddPet}>
-        <Text style={styles.addButtonText}>Add</Text>
+        <Text style={styles.addButtonText}>Add Pet</Text>
       </TouchableOpacity>
+
+     
     </View>
   );
 }
@@ -281,29 +201,19 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     width: "80%",
   },
-  datePickerButton: {
-    marginBottom: 10,
-    padding: 10,
-    backgroundColor: "#f0f0f0",
-    borderRadius: 5,
-  },
-  datePickerText: {
-    fontSize: 16,
+  allergiesInput: {
+    height: 100,
+    textAlignVertical: "top",
   },
   addButton: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "#A3DFF2",
     padding: 10,
-    borderRadius: 5,
-    width: "50%",
+    borderRadius: 35,
+    width: "40%",
     justifyContent: "center",
     alignItems: "center",
   },
   addButtonText: {
     color: "#fff",
-    textAlign: "center",
-  },
-  allergiesInput: {
-    height: 100,
-    textAlignVertical: "top",
   },
 });

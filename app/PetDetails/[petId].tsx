@@ -42,6 +42,11 @@ export default function PetDetails() {
       <Text style={styles.detail}>Name: {pet.name}</Text>
       <Text style={styles.detail}>Gender: {pet.gender}</Text>
       <Text style={styles.detail}>Type: {pet.type}</Text>
+      <Text style={styles.detail}>Allergies: {pet.allergies}</Text>
+      <Text style={styles.detail}>Other:{pet.other}</Text>
+
+
+
     </View>
   );
 }

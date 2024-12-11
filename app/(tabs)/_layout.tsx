@@ -21,12 +21,29 @@ export default function TabLayout() {
 
   return (
     <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        // Disable the static render of the header on web
-        // to prevent a hydration error in React Navigation v6.
-        headerShown: useClientOnlyValue(false, true),
-      }}>
+    screenOptions={{
+      tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
+      headerShown: useClientOnlyValue(false, true),
+      tabBarStyle: {
+        backgroundColor: "#A3DFF2",
+        height: 60,
+        width: 250,
+        paddingBottom: 10,
+        borderRadius: 35,
+        bottom: 10, 
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 5,
+        elevation: 5, 
+        alignSelf: "center",
+    
+      },
+      tabBarLabelStyle: {
+        fontSize: 14, 
+        fontWeight: "bold",
+      },
+    }}>
       
       <Tabs.Screen
   name="index"

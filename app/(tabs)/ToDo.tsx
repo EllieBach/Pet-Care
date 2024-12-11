@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,63 +7,27 @@ import {
   FlatList,
   StyleSheet,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import * as Notifications from "expo-notifications";
 
-export default function ToDoList() {
-  const { petId } = useLocalSearchParams(); // Access petId from navigation
+export default function SimpleToDoList() {
   const [task, setTask] = useState("");
   const [tasks, setTasks] = useState([]);
 
-  useEffect(() => {
-    loadTasks();
-  }, [petId]);
-
-  const loadTasks = async () => {
-    try {
-      const storedTasks = await AsyncStorage.getItem(`tasks_${petId}`);
-      if (storedTasks) {
-        setTasks(JSON.parse(storedTasks));
-      }
-    } catch (error) {
-      console.error("Error loading tasks:", error);
-    }
-  };
-
-  const saveTasks = async (updatedTasks) => {
-    try {
-      await AsyncStorage.setItem(`tasks_${petId}`, JSON.stringify(updatedTasks));
-    } catch (error) {
-      console.error("Error saving tasks:", error);
-    }
-  };
-
-  const handleAddTask = async () => {
+  const handleAddTask = () => {
     if (task) {
       const newTask = { id: Date.now(), name: task };
-      const updatedTasks = [...tasks, newTask];
-      setTasks(updatedTasks);
+      setTasks([...tasks, newTask]);
       setTask("");
-      saveTasks(updatedTasks);
-
-      
-
     } else {
       alert("Task cannot be empty!");
     }
   };
 
   const handleDeleteTask = (id) => {
-    const updatedTasks = tasks.filter((t) => t.id !== id);
-    setTasks(updatedTasks);
-    saveTasks(updatedTasks);
+    setTasks(tasks.filter((t) => t.id !== id));
   };
 
-  
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>To-Do: {petId}</Text>
 
       <TextInput
         style={styles.input}
@@ -100,11 +64,13 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     backgroundColor: "#f5f5f5",
+    
   },
   title: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: "bold",
     marginBottom: 20,
+    textAlign: "center",
   },
   input: {
     width: "100%",
@@ -115,10 +81,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   addButton: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "#A3DFF2",
     padding: 10,
     borderRadius: 5,
     marginBottom: 20,
+    width: 100,
+    alignSelf: "center",
   },
   addButtonText: {
     color: "white",
