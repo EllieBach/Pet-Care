@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useLocalSearchParams } from "expo-router"; // For dynamic routing
+import { useLocalSearchParams } from "expo-router"; 
 
 export default function PetDetails() {
   const [pet, setPet] = useState(null); // State for the pet details

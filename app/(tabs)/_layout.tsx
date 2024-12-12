@@ -3,7 +3,6 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Link, Tabs } from 'expo-router';
 import { Pressable } from 'react-native';
 import Fontisto from '@expo/vector-icons/Fontisto';
-
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
@@ -30,15 +29,12 @@ export default function TabLayout() {
         width: 250,
         paddingBottom: 10,
         borderRadius: 35,
-        bottom: 10, 
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 5,
+        bottom: 10,
+        boxShadow: "0 2px 5px rgba(0, 0, 0, 0.2)",
         elevation: 5, 
         alignSelf: "center",
-    
       },
+      
       tabBarLabelStyle: {
         fontSize: 14, 
         fontWeight: "bold",
