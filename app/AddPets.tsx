@@ -27,10 +27,10 @@ export default function AddPets() {
         const savedPets = await AsyncStorage.getItem("pets");
         if (savedPets) {
           setPets(JSON.parse(savedPets));
-          console.log("Pets loaded from storage:", JSON.parse(savedPets)); // Debug log
+      
         }
       } catch (error) {
-        console.error("Error loading pets:", error); // Debug log
+        
       }
     };
     loadPets();
@@ -38,7 +38,7 @@ export default function AddPets() {
 
   const handleAddPet = async () => {
     try {
-      console.log("handleAddPet called"); // Debug log
+      
       if (petName && selectedGender !== "Select a gender" && selectedType !== "Select a pet type") {
         const newPet = {
           id: uuidv4(),

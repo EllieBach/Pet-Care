@@ -7,25 +7,25 @@ export default function HomeScreen() {
   const [pets, setPets] = useState([]);
 
   useEffect(() => {
-    console.log("useEffect triggered"); // Debug log
+   
     const fetchPets = async () => {
       try {
-        console.log("Fetching pets..."); // Debug log
+       
         const storedPets = await AsyncStorage.getItem("pets");
         if (storedPets) {
           const parsedPets = JSON.parse(storedPets);
           setPets(parsedPets);
-          console.log("Pets fetched:", parsedPets); // Log parsed data
+        
         } else {
           console.log("No pets found in storage.");
         }
       } catch (error) {
-        console.error("Error fetching pets:", error); // Log any errors
+       
       }
     };
 
     fetchPets();
-  }, []); // Dependency array ensures it runs only once on mount
+  }, []); 
 
   return (
     <View style={styles.container}>
@@ -36,7 +36,7 @@ export default function HomeScreen() {
           <Link href={`/PetDetails/${item.id}`} asChild>
             <Pressable>
               <View style={styles.petItem}>
-                <Text style={styles.petText}>{item.name}</Text> {/* Display pet name */}
+                <Text style={styles.petText}>{item.name}</Text> 
               </View>
             </Pressable>
           </Link>
